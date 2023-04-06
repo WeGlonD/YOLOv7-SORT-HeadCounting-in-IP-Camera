@@ -5,8 +5,6 @@ build/
 
 
 # Files
-*.weights
-*.t7
 *.mp4
 *.avi
 *.so
