@@ -22,6 +22,16 @@ import numpy as np
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 data_deque = {}
 
+object_counter = {}
+
+#contacted check // null -> no contacting any line / False -> contacting green line / True -> contacting purple iine (already counted)
+is_counted = {}
+
+#green line
+line = [(220, 350), (1034, 384)]
+#purple line
+line1 = [(160, 425), (1070, 458)]
+
 
 ##########################################################################################
 def xyxy_to_xywh(*xyxy):
@@ -99,6 +109,7 @@ def UI_box(x, img, color=None, label=None, line_thickness=None):
     tl = line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
     color = color or [random.randint(0, 255) for _ in range(3)]
     c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
+    cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
     if label:
         tf = max(tl - 1, 1)  # font thickness
         t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
@@ -107,10 +118,15 @@ def UI_box(x, img, color=None, label=None, line_thickness=None):
 
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
+def intersect(A,B,C,D):
+    return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
+def ccw(A,B,C):
+    return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
 
 def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
-    #cv2.line(img, line[0], line[1], (46,162,112), 3)
+    cv2.line(img, line[0], line[1], (46,162,112), 3)
+    cv2.line(img, line1[0], line1[1], (162,46,112), 3)
 
     height, width, _ = img.shape
     # remove tracked point from buffer if object is lost
@@ -142,6 +158,26 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
 
         # add center to buffer
         data_deque[id].appendleft(center)
+
+        if len(data_deque[id]) >= 2:
+            if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
+                cv2.line(img, line[0], line[1], (255, 255, 255), 3)
+                if id not in is_counted:
+                    is_counted[id] = False
+
+            if intersect(data_deque[id][0], data_deque[id][1], line1[0], line1[1]):
+                cv2.line(img, line1[0], line1[1], (255, 255, 255), 3)
+                if id in is_counted and not is_counted[id]:
+
+                    if obj_name not in object_counter:
+                        object_counter[obj_name] = 1
+                    else:
+                        object_counter[obj_name] += 1
+                    is_counted[id] = True
+                 # When an employee in the store leaves and comes back in
+                elif id not in is_counted:
+                    is_counted[id] = True
+
         UI_box(box, img, label=label, color=color, line_thickness=2)
         # draw trail
         for i in range(1, len(data_deque[id])):
@@ -152,12 +188,23 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
             thickness = int(np.sqrt(opt.trailslen / float(i + i)) * 1.5)
             # draw trails
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
+
+        # Display Count in top left corner
+        for idx, (key, value) in enumerate(object_counter.items()):
+            cnt_str1 = str(key) + ":" +str(value)
+            cv2.line(img, (20,25), (500,25), [85,45,255], 40)
+            cv2.putText(img, f'Numbers of People Entering', (11, 35), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)    
+            cv2.line(img, (20,65+ (idx*40)), (200,65+ (idx*40)), [85,45,255], 30)
+            cv2.putText(img, cnt_str1, (11, 75+ (idx*40)), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+        
     return img
+
 def load_classes(path):
     # Loads *.names file at 'path'
     with open(path, 'r') as f:
         names = f.read().split('\n')
     return list(filter(None, names)) 
+    
 def detect(save_img=False):
     names, source, weights, view_img, save_txt, imgsz, trace = opt.names, opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace 
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
