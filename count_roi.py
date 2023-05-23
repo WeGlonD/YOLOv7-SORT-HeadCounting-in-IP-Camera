@@ -32,7 +32,7 @@ with open('vertice.txt', 'r') as f:
     polygon_lst=f.read().split('/')
     for i, e in enumerate(polygon_lst):
         e=e.split()
-        e=[int(l) for l in e]
+        e=[(int(e[l]), int(e[l+1])), for l in range(0,len(e),2)]
         polygon_lst[i]=e
 
 line_lst=[]
