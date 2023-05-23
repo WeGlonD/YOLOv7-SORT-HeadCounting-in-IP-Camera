@@ -52,7 +52,7 @@ def is_point_in_roi(point, id):
 
         if mask >= 0:
             if id not in ids:
-                ids[id]=[0,0,0,0]
+                ids[id]=np.zeros(4, dtype=int)
             
             ids[id][i]+=1
 
@@ -377,6 +377,7 @@ def detect(save_img=False):
 
     with open('roi_history.txt', 'w') as f:
         for id in ids:
+            ids[id] = (ids[id] / 12).tolist()
             src = str(id) + ' : ' + str(ids[id])
             print(src, file=f)
             
