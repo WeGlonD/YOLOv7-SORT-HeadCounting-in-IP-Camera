@@ -376,7 +376,7 @@ def detect(save_img=False):
     print(f'Done. ({time.time() - t0:.3f}s)')
 
     with open('roi_history.txt', 'w') as f:
-        for id in ids:
+        for id in sorted(ids):
             ids[id] = (ids[id] / 12).tolist()
             src = str(id) + ' : ' + str(ids[id])
             print(src, file=f)
