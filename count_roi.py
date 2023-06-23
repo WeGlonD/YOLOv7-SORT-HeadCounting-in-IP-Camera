@@ -380,6 +380,20 @@ def detect(save_img=False):
             ids[id] = (ids[id] / 12).tolist()
             src = str(id) + ' : ' + str(ids[id])
             print(src, file=f)
+
+    with open('roi_history_after_adminate.txt', 'w') as f:
+        for id in sorted(ids):
+            flag = False
+            for idx in range(4):
+                if ids[id][idx] == sum(ids[id]):
+                    flag = True
+                    continue
+            if flag:
+                continue
+            src = str(id) + ' : ' + str(ids[id])
+            print(src, file=f)
+        print(len(ids[id]),file=f)
+    
             
 
 
@@ -388,7 +402,7 @@ if __name__ == '__main__':
     parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--conf-thres', type=float, default=0.25, help='object confidence threshold')
+    parser.add_argument('--conf-thres', type=float, default=0.6, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='display results')
